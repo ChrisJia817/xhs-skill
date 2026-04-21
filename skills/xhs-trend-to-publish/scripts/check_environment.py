@@ -7,7 +7,6 @@ from vendor_paths import AUTO_REDBOOK_DIR, XHS_CONFIG_DIR, XHS_SKILLS_DIR
 from common import read_json, resolve_account_profile_dir, ensure_dir
 
 SUPPORTED_PYTHON_MIN = (3, 11)
-SUPPORTED_PYTHON_MAX = (3, 13)
 
 
 def check_path(name: str, path: Path) -> tuple[str, bool, str]:
@@ -40,11 +39,11 @@ def check_python_imports(name: str, modules: list[str]) -> tuple[str, bool, str]
 
 def main():
     checks = []
-    python_supported = SUPPORTED_PYTHON_MIN <= sys.version_info[:2] < SUPPORTED_PYTHON_MAX
+    python_supported = SUPPORTED_PYTHON_MIN <= sys.version_info[:2]
     checks.append((
         'python',
         Path(sys.executable).exists() and python_supported,
-        f'{sys.executable} (version={sys.version.split()[0]}, supported=3.11/3.12)',
+        f'{sys.executable} (version={sys.version.split()[0]}, supported=3.11+)',
     ))
     uv = shutil.which('uv')
     checks.append(('uv', uv is not None, uv or 'missing'))
