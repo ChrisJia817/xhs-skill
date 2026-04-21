@@ -1,51 +1,118 @@
-# OpenClaw Workflow Workspace
+# xhs-skill
 
-这个目录是给 GitHub 和新电脑用的“可读工作区”。
+一个给 agent 直接读取的、小红书内容工作流仓库。
 
-目标只有两个：
+它不是 OpenClaw 的整机备份，也不是运行时状态快照。它的目标更简单：
 
-- 新电脑上的 agent clone 下来后，先读 `AGENTS.md` 就知道该看什么、该怎么跑。
-- 真正可复用的 workflow 跟仓库走；账号、密钥、登录态、运行产物只留在本机。
+- 把可复用的 workflow、规则、脚本和模板放进 GitHub
+- 让新电脑上的 agent clone 下来后，读几份文档就知道怎么继续工作
 
-## 目录说明
+## 这个仓库能做什么
 
-- `AGENTS.md`：agent 进入仓库后的启动顺序和工作规则
-- `SOUL.md`：行为原则
-- `IDENTITY.md`：agent 身份占位
-- `USER.md`：用户偏好占位
-- `MEMORY.md`：这套 workflow 的长期偏好和约束
-- `docs/setup-new-machine.md`：新电脑落地步骤
-- `skills/xhs-trend-to-publish`：去敏后的业务 workflow 快照
-- `scripts/sync_from_local_openclaw.ps1`：从旧机器的 OpenClaw 工作区重新同步 skill
+当前核心 workflow 是 [`skills/xhs-trend-to-publish`](skills/xhs-trend-to-publish/README.md)，主链路是：
 
-## 这类内容可以进 GitHub
+`discover -> score -> rewrite -> markdown -> render -> publish`
 
-- 规则文档、说明文档、参考资料
-- `skills/xhs-trend-to-publish` 里的 `scripts/`、`references/`、`config/` 模板、vendor 代码
-- 通用占位文件和新机部署脚本
+它能覆盖这些能力：
 
-## 这类内容不要进 GitHub
+- 从小红书和抖音发现热点与样本
+- 合并样本池并生成 topic brief
+- 改写成小红书图文文案
+- 生成渲染 Markdown 和卡片图片
+- 以草稿、私密或公开方式发布到小红书
+- 把同一份 brief 分支改写成微信公众号文章
 
+## 仓库定位
+
+这份仓库里放的是“可迁移能力”，不放“本机状态”。
+
+适合进 GitHub 的内容：
+
+- 规则文档
+- 工作流脚本
+- 参考资料
+- 示例配置模板
+- vendor 代码和适配层
+
+不应该进 GitHub 的内容：
+
+- token、cookie、app secret、二维码、登录态
 - `config/openclaw.json`
-- `.openclaw/`、`state/`、`startup/`、`downloads/`、`tools/`
-- `memory/*.md` 里的私人会话记录
-- `skills/xhs-trend-to-publish/data/`
-- `skills/xhs-trend-to-publish/temp/`
-- token、app secret、二维码、cookie、Chrome 登录态、真实发布结果
+- `.openclaw/`、`state/`、`startup/`、`downloads/`
+- `skills/xhs-trend-to-publish/data/`、`temp/`
+- 私人记忆和真实发布结果
 
-## 新机使用
+## 新电脑最快上手
 
-1. 把这个目录 clone 到新电脑。
-2. 先读 `AGENTS.md`。
-3. 按 `docs/setup-new-machine.md` 补本机依赖、环境变量和账号配置。
-4. 需要跑小红书工作流时，再读 `skills/xhs-trend-to-publish/README.md` 和 `SKILL.md`。
+如果你只是想把仓库 clone 到新电脑然后尽快跑起来，先看：
 
-## 从旧机器更新 workflow
+- [5 分钟清单](docs/quickstart-first-run.md)
 
-在当前仓库根目录执行：
+如果你要看完整说明，再看：
+
+- [详细部署文档](docs/setup-new-machine.md)
+
+## Agent 入口
+
+给 agent 的推荐阅读顺序在这里：
+
+- [AGENTS.md](AGENTS.md)
+
+对 agent 来说，进入仓库后的最小启动顺序是：
+
+1. 读 `README.md`
+2. 读 `SOUL.md`
+3. 读 `USER.md`
+4. 读 `MEMORY.md`
+5. 涉及小红书 workflow 时再读 `skills/xhs-trend-to-publish/README.md` 和 `SKILL.md`
+
+## 目录结构
+
+- `AGENTS.md`: agent 启动顺序和共享规则
+- `SOUL.md`: 行为原则
+- `USER.md`: 用户偏好模板
+- `MEMORY.md`: 共享的长期 workflow 偏好
+- `docs/`: 新机落地和快速启动文档
+- `scripts/`: 工作区级辅助脚本
+- `skills/xhs-trend-to-publish/`: 业务 workflow 本体
+
+## 最短验证路径
+
+在新电脑上，推荐按这个顺序验证：
+
+1. 跑环境自检
+
+```bash
+python skills/xhs-trend-to-publish/scripts/check_environment.py
+```
+
+2. 跑 mock 链路
+
+```bash
+python skills/xhs-trend-to-publish/scripts/pipeline.py --platform brief --sources xhs douyin --keyword "AI" --publish-time "半年内" --discover-backend mock --douyin-detail-limit 0
+```
+
+3. mock 通过后，再碰真实账号登录和草稿发布
+
+## 从旧机器同步更新
+
+如果旧机器上还有持续演进的 OpenClaw 工作区，可以用这个脚本重新同步 skill：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\sync_from_local_openclaw.ps1
 ```
 
-默认会从 `D:\OpenClaw\.openclaw\workspace` 同步 `xhs-trend-to-publish`，并自动排除 `data/`、`temp/`、`__pycache__/`、vendor 内嵌 `.git/` 等不该提交的内容。
+默认同步源是 `D:\OpenClaw\.openclaw\workspace`，会自动排除：
+
+- `data/`
+- `temp/`
+- `__pycache__/`
+- vendor 内嵌 `.git/`
+- vendor 的 `tmp/` 和 `demos/`
+
+## 相关文档
+
+- [快速上手](docs/quickstart-first-run.md)
+- [详细部署](docs/setup-new-machine.md)
+- [小红书 workflow README](skills/xhs-trend-to-publish/README.md)
+- [小红书 workflow SKILL](skills/xhs-trend-to-publish/SKILL.md)
