@@ -126,8 +126,7 @@ if (Test-Path $MediaCrawlerRoot) {
     $mediaCrawlerRemovePaths = @(
         (Join-Path $mediaCrawlerDestination '.git'),
         (Join-Path $mediaCrawlerDestination '.venv'),
-        (Join-Path $mediaCrawlerDestination 'browser_data'),
-        (Join-Path $mediaCrawlerDestination 'cache')
+        (Join-Path $mediaCrawlerDestination 'browser_data')
     )
 
     foreach ($path in $mediaCrawlerRemovePaths) {
