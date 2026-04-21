@@ -1,12 +1,10 @@
 # 新电脑部署
 
-这份文档解决的是“如何在另一台机器上恢复同样的 workflow 能力”，不是“怎么把旧电脑的运行态整个搬过来”。
+这份文档解决的是“如何在另一台机器上恢复同样的 workflow 能力”，不是“把旧电脑的运行态整机搬过来”。
 
-如果你只想用最短路径跑起来，先看：
+如果你只想看最短路径，先看：
 
 - [5 分钟清单](quickstart-first-run.md)
-
-这份文档是详细版。
 
 ## 原则
 
@@ -16,13 +14,23 @@
 - 脚本
 - 模板
 
-这些东西不要跟着仓库迁移：
+这些内容不要跟着仓库迁移：
 
-- token、cookie、app secret、二维码
-- Chrome 登录态
-- 真实发布结果
-- 抓取缓存
+- token、cookie、app secret、二维码、登录态
+- Chrome profile 本体
+- 真实发布结果和抓取缓存
 - OpenClaw 本机状态目录
+
+## 仓库内已包含的关键 skill
+
+当前仓库已经带上：
+
+- `skills/xhs-trend-to-publish/vendor/MediaCrawler`
+- `skills/xhs-trend-to-publish/vendor/XiaohongshuSkills`
+- `skills/xhs-trend-to-publish/vendor/Auto-Redbook-Skills`
+- `skills/baoyu-post-to-wechat`
+
+所以新机器上不需要再单独 clone 这些源码仓库，但仍然需要安装它们的运行依赖。
 
 ## 1. Clone 仓库
 
@@ -31,7 +39,7 @@ git clone https://github.com/ChrisJia817/xhs-skill.git
 cd xhs-skill
 ```
 
-## 2. 安装基础依赖
+## 2. 准备基础工具
 
 至少准备：
 
@@ -40,16 +48,29 @@ cd xhs-skill
 - `bun` 或 `npx`
 - Chrome
 
-如果要跑具体分支，再补：
+建议：
 
-- Douyin：MediaCrawler 及其依赖
-- WeChat：`baoyu-post-to-wechat` 对应脚本与凭证
+- MediaCrawler 对 Python 版本要求更严格，优先使用 Python 3.11+
+- 如果你习惯虚拟环境，先激活你自己的 Python venv，再执行仓库脚本
 
-## 3. 决定你的路径策略
+## 3. 安装仓库内依赖
 
-建议优先用环境变量，因为跨机器最稳。
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-new-machine.ps1
+```
 
-### 方案 A：环境变量优先
+这个脚本会安装和准备：
+
+- `Auto-Redbook-Skills` 的 Python 依赖
+- `XiaohongshuSkills` 的 Python 依赖
+- Python Playwright Chromium
+- `MediaCrawler` 的 `uv` 环境和 Chromium
+- `baoyu-post-to-wechat` 的 Bun 依赖
+- 工作流默认运行目录
+
+## 4. 决定路径策略
+
+推荐优先用环境变量，因为跨机器最稳。
 
 建议设置：
 
@@ -59,75 +80,79 @@ cd xhs-skill
 - `XHS_PROFILE_DIR`
 - `XHS_PROFILE_DIR_<ACCOUNT>`
 
-### 方案 B：按仓库相对目录放外部依赖
+如果你完全不配这些环境变量，当前工作流默认会优先落到：
 
-如果你不想配环境变量，也可以按约定路径放：
+- Douyin：`skills/xhs-trend-to-publish/vendor/MediaCrawler`
+- WeChat：`skills/baoyu-post-to-wechat/scripts/wechat-api.ts`
 
-- `external/MediaCrawler`
-- `external/baoyu-post-to-wechat/scripts/wechat-api.ts`
+## 5. 补小红书账号配置
 
-当前 `skills/xhs-trend-to-publish/scripts/vendor_paths.py` 会优先找环境变量，其次找这些相对目录。
-
-## 4. 补账号配置
-
-先参考：
+先参考模板：
 
 - `skills/xhs-trend-to-publish/config/accounts.template.json`
 
-然后在本地填写：
+再在本地填写实际文件：
 
 - `skills/xhs-trend-to-publish/vendor/XiaohongshuSkills/config/accounts.json`
 
-至少要保证默认账号的 `profile_dir` 指向这台机器上的真实 Chrome profile。
+最少需要确认：
 
-## 5. 跑环境自检
+- `default_account`
+- 默认账号的 `profile_dir`
+- 这条 `profile_dir` 在新机器上真实存在
+
+## 6. 跑环境自检
 
 ```bash
 python skills/xhs-trend-to-publish/scripts/check_environment.py
 ```
 
-这一步会检查：
+当前自检会检查：
 
+- `python`
 - `uv`
 - `bun` / `npx`
-- MediaCrawler 路径
-- WeChat API 脚本路径
-- 小红书账号配置
-- 默认账号 profile 是否存在
+- `MediaCrawler` 路径
+- `Auto-Redbook-Skills` 渲染器路径
+- `XiaohongshuSkills` 脚本路径
+- `WeChat API` 脚本路径
+- Python 依赖导入是否正常
+- `MediaCrawler` 的 `uv run python --version`
+- 小红书 `accounts.json`
+- 默认账号 `profile_dir`
 
-如果这一步不通过，不要直接跑正式发布。
+如果这里不过，不要直接进真实发布。
 
-## 6. 先跑 mock 链路
+## 7. 建议验证顺序
+
+先跑最轻量的链路：
 
 ```bash
 python skills/xhs-trend-to-publish/scripts/pipeline.py --platform brief --sources xhs douyin --keyword "AI" --publish-time "半年内" --discover-backend mock --douyin-detail-limit 0
 ```
 
-mock 通过再继续，别反过来。
+然后再按顺序验证：
 
-## 7. 再验证真实账号
-
-推荐顺序：
-
-1. 先确认 Chrome profile 存在
-2. 必要时重新登录
-3. 先测草稿或私密
-4. 最后再测公开发布
+1. 小红书登录
+2. 草稿或私密发布
+3. 微信分支
+4. 最后才是公开发布
 
 ## 8. 推送前检查
 
-推 GitHub 之前，至少确认：
+推到 GitHub 之前，至少确认：
 
-- 没有把 `data/`、`temp/`、`memory/*.md` 加进去
+- 没有把 `data/`、`temp/`、缓存目录加进去
 - 没有把 `accounts.json`、token、cookie、profile 路径加进去
 - 没有把真实发布结果和抓取缓存加进去
 
-## 9. 推荐阅读顺序
+## 9. 新机器上 agent 的阅读顺序
 
-如果是新电脑上的 agent，建议按这个顺序读：
+推荐：
 
 1. `README.md`
 2. `AGENTS.md`
 3. `docs/quickstart-first-run.md`
 4. `skills/xhs-trend-to-publish/README.md`
 5. `skills/xhs-trend-to-publish/SKILL.md`
+6. `skills/baoyu-post-to-wechat/SKILL.md`

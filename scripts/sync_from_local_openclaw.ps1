@@ -1,7 +1,9 @@
 param(
     [string]$SourceWorkspace = 'D:\OpenClaw\.openclaw\workspace',
     [string]$DestinationWorkspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
-    [string]$SkillName = 'xhs-trend-to-publish'
+    [string]$SkillName = 'xhs-trend-to-publish',
+    [string]$MediaCrawlerRoot = 'D:\OpenClaw\state\tmp\mediacrawler-review',
+    [string]$BaoyuSkillsRoot = 'D:\OpenClaw\state\tmp\baoyu-skills-review'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -85,6 +87,71 @@ $vendorAccounts = Join-Path $destinationSkill 'vendor\XiaohongshuSkills\config\a
 
 if ((Test-Path $accountsTemplate) -and (Test-Path (Split-Path -Parent $vendorAccounts))) {
     Copy-Item -Path $accountsTemplate -Destination $vendorAccounts -Force
+}
+
+$mediaCrawlerDestination = Join-Path $destinationSkill 'vendor\MediaCrawler'
+if (Test-Path $MediaCrawlerRoot) {
+    if (Test-Path $mediaCrawlerDestination) {
+        Remove-Item -Path $mediaCrawlerDestination -Recurse -Force
+    }
+
+    New-Item -ItemType Directory -Force -Path $mediaCrawlerDestination | Out-Null
+    Copy-Item -Path (Join-Path $MediaCrawlerRoot '*') -Destination $mediaCrawlerDestination -Recurse -Force
+
+    $mediaCrawlerRemovePaths = @(
+        (Join-Path $mediaCrawlerDestination '.git'),
+        (Join-Path $mediaCrawlerDestination '.venv'),
+        (Join-Path $mediaCrawlerDestination 'browser_data'),
+        (Join-Path $mediaCrawlerDestination 'cache')
+    )
+
+    foreach ($path in $mediaCrawlerRemovePaths) {
+        if (Test-Path $path) {
+            Remove-Item -Path $path -Recurse -Force
+        }
+    }
+
+    Get-ChildItem -Path $mediaCrawlerDestination -Recurse -Directory -Force |
+        Where-Object { $_.Name -eq '__pycache__' } |
+        Remove-Item -Recurse -Force
+
+    Get-ChildItem -Path $mediaCrawlerDestination -Recurse -File -Force -Include '*.pyc', '*.pyo', '*.pyd' |
+        Remove-Item -Force
+}
+
+$baoyuSkillSource = Join-Path $BaoyuSkillsRoot 'skills\baoyu-post-to-wechat'
+$baoyuSkillDestination = Join-Path $DestinationWorkspace 'skills\baoyu-post-to-wechat'
+
+if (Test-Path $baoyuSkillSource) {
+    if (Test-Path $baoyuSkillDestination) {
+        Remove-Item -Path $baoyuSkillDestination -Recurse -Force
+    }
+
+    New-Item -ItemType Directory -Force -Path (Join-Path $baoyuSkillDestination 'scripts\vendor') | Out-Null
+    Copy-Item -Path (Join-Path $baoyuSkillSource '*') -Destination $baoyuSkillDestination -Recurse -Force
+
+    $baoyuVendorPackages = @(
+        @{ Source = (Join-Path $BaoyuSkillsRoot 'packages\baoyu-chrome-cdp'); Destination = (Join-Path $baoyuSkillDestination 'scripts\vendor\baoyu-chrome-cdp') },
+        @{ Source = (Join-Path $BaoyuSkillsRoot 'packages\baoyu-md'); Destination = (Join-Path $baoyuSkillDestination 'scripts\vendor\baoyu-md') }
+    )
+
+    foreach ($pkg in $baoyuVendorPackages) {
+        if (Test-Path $pkg.Source) {
+            if (Test-Path $pkg.Destination) {
+                Remove-Item -Path $pkg.Destination -Recurse -Force
+            }
+            New-Item -ItemType Directory -Force -Path $pkg.Destination | Out-Null
+            Copy-Item -Path (Join-Path $pkg.Source '*') -Destination $pkg.Destination -Recurse -Force
+        }
+    }
+
+    $baoyuPackageJson = Join-Path $baoyuSkillDestination 'scripts\package.json'
+    if (Test-Path $baoyuPackageJson) {
+        $packageJson = Get-Content $baoyuPackageJson -Raw | ConvertFrom-Json
+        $packageJson.dependencies.'baoyu-chrome-cdp' = 'file:./vendor/baoyu-chrome-cdp'
+        $packageJson.dependencies.'baoyu-md' = 'file:./vendor/baoyu-md'
+        $packageJson | ConvertTo-Json -Depth 10 | Set-Content $baoyuPackageJson
+    }
 }
 
 Write-Host "Synced skill '$SkillName' from '$SourceWorkspace' to '$DestinationWorkspace'."

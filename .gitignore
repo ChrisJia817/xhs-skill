@@ -18,6 +18,7 @@
 
 # Logs and caches
 *.log
+node_modules/
 __pycache__/
 *.pyc
 *.pyo
@@ -26,12 +27,17 @@ __pycache__/
 # Workflow runtime outputs
 /skills/xhs-trend-to-publish/data/
 /skills/xhs-trend-to-publish/temp/
+/skills/xhs-trend-to-publish/vendor/MediaCrawler/.venv/
+/skills/xhs-trend-to-publish/vendor/MediaCrawler/browser_data/
+/skills/xhs-trend-to-publish/vendor/MediaCrawler/cache/
+/skills/xhs-trend-to-publish/vendor/MediaCrawler/__pycache__/
 /skills/xhs-trend-to-publish/vendor/**/tmp/
 /skills/xhs-trend-to-publish/vendor/**/demos/
 /skills/xhs-trend-to-publish/vendor/**/__pycache__/
 /skills/xhs-trend-to-publish/vendor/**/*.pyc
 /skills/xhs-trend-to-publish/vendor/**/.git/
 /skills/xhs-trend-to-publish/vendor/**/.gitignore
+/skills/baoyu-post-to-wechat/scripts/node_modules/
 
 # OS/editor noise
 .DS_Store

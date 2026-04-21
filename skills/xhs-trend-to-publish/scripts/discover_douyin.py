@@ -44,17 +44,50 @@ def normalize_item(item: dict) -> dict:
     }
 
 
+def build_mock_candidates(keyword: str, limit: int) -> list[dict]:
+    total = max(1, limit)
+    items = []
+    for idx in range(total):
+        items.append({
+            'source_platform': 'douyin',
+            'aweme_id': f'mock-aweme-{idx + 1}',
+            'title': f'{keyword} mock douyin sample {idx + 1}',
+            'summary': f'模拟抖音样本 {idx + 1}，用于新机器上的 workflow 自检。',
+            'author': f'mock-author-{idx + 1}',
+            'publish_time': '2026-01-01T00:00:00',
+            'like_count': 1000 - idx * 10,
+            'comment_count': 120 - idx * 3,
+            'collect_count': 80 - idx * 2,
+            'share_count': 60 - idx,
+            'url': f'https://www.douyin.com/video/mock-{idx + 1}',
+            'cover_url': f'https://example.com/mock-douyin-cover-{idx + 1}.png',
+            'source_type': 'douyin-search-mock',
+            'raw': {
+                'mock': True,
+                'keyword': keyword,
+                'index': idx + 1,
+            },
+        })
+    return items
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--keyword', required=True)
     parser.add_argument('--run-id', default='')
     parser.add_argument('--limit', type=int, default=15)
+    parser.add_argument('--backend', default='file', choices=['file', 'mock'])
     args = parser.parse_args()
 
     run_id = args.run_id or new_run_id('dy')
-    source_file = find_latest_search_file()
-    items = load_json_file(source_file)
-    candidates = [normalize_item(item) for item in items[:max(1, args.limit)] if isinstance(item, dict)]
+    source_file = ''
+    if args.backend == 'mock':
+        candidates = build_mock_candidates(args.keyword, args.limit)
+    else:
+        source_path = find_latest_search_file()
+        source_file = str(source_path)
+        items = load_json_file(source_path)
+        candidates = [normalize_item(item) for item in items[:max(1, args.limit)] if isinstance(item, dict)]
 
     payload = {
         'run_id': run_id,
@@ -62,8 +95,9 @@ def main():
         'status': 'success',
         'generated_at': iso_now(),
         'keyword': args.keyword,
+        'backend': args.backend,
         'candidate_count': len(candidates),
-        'source_file': str(source_file),
+        'source_file': source_file,
         'candidates': candidates,
     }
 
@@ -74,7 +108,8 @@ def main():
         'status': 'success',
         'finished_at': iso_now(),
         'keyword': args.keyword,
-        'source_file': str(source_file),
+        'backend': args.backend,
+        'source_file': source_file,
         'output': str(out_path),
         'candidate_count': len(candidates),
     })

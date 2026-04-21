@@ -28,8 +28,8 @@ def resolve_mediacrawler_root() -> Path:
     return _resolve_path(
         'XHS_DOUYIN_MEDIACRAWLER_ROOT',
         [
-            WORKSPACE_ROOT / 'external' / 'MediaCrawler',
             VENDOR_DIR / 'MediaCrawler',
+            WORKSPACE_ROOT / 'external' / 'MediaCrawler',
         ],
     )
 
@@ -48,7 +48,7 @@ def resolve_wechat_api_script() -> Path:
     return _resolve_path(
         'XHS_WECHAT_API_SCRIPT',
         [
-            WORKSPACE_ROOT / 'external' / 'baoyu-post-to-wechat' / 'scripts' / 'wechat-api.ts',
             WORKSPACE_ROOT / 'skills' / 'baoyu-post-to-wechat' / 'scripts' / 'wechat-api.ts',
+            WORKSPACE_ROOT / 'external' / 'baoyu-post-to-wechat' / 'scripts' / 'wechat-api.ts',
         ],
     )

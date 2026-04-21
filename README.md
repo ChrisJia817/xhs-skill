@@ -22,6 +22,13 @@
 - 以草稿、私密或公开方式发布到小红书
 - 把同一份 brief 分支改写成微信公众号文章
 
+仓库已经一并带上这条链路依赖的关键组件：
+
+- `skills/xhs-trend-to-publish/vendor/MediaCrawler`
+- `skills/xhs-trend-to-publish/vendor/XiaohongshuSkills`
+- `skills/xhs-trend-to-publish/vendor/Auto-Redbook-Skills`
+- `skills/baoyu-post-to-wechat`
+
 ## 仓库定位
 
 这份仓库里放的是“可迁移能力”，不放“本机状态”。
@@ -65,6 +72,7 @@
 3. 读 `USER.md`
 4. 读 `MEMORY.md`
 5. 涉及小红书 workflow 时再读 `skills/xhs-trend-to-publish/README.md` 和 `SKILL.md`
+6. 涉及微信公众号分支时再读 `skills/baoyu-post-to-wechat/SKILL.md`
 
 ## 目录结构
 
@@ -84,6 +92,12 @@
 
 ```bash
 python skills/xhs-trend-to-publish/scripts/check_environment.py
+```
+
+如果是新机器首次 clone，建议先执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-new-machine.ps1
 ```
 
 2. 跑 mock 链路
@@ -109,6 +123,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\sync_from_local_openclaw.ps1
 - `__pycache__/`
 - vendor 内嵌 `.git/`
 - vendor 的 `tmp/` 和 `demos/`
+
+如果本机还存在 `MediaCrawler` 和 `baoyu-post-to-wechat` 的源码副本，同步脚本也会把它们一起并入当前仓库。
 
 ## 相关文档
 

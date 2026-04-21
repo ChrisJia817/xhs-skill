@@ -1,6 +1,10 @@
 import argparse
 import subprocess
+import sys
+from pathlib import Path
 from common import read_json, append_stage_manifest, iso_now, new_run_id, resolve_wechat_account_settings
+
+SKILL_ROOT = Path(__file__).resolve().parents[1]
 
 
 def run_stage(cmd: list[str], cwd: str, run_id: str, stage: str, params: dict):
@@ -197,10 +201,12 @@ def run_unified_brief_pipeline(python: str, cwd: str, run_id: str, args) -> dict
         outputs['xhs_score'] = xhs_score_out
 
     if 'douyin' in args.sources:
-        dy_discover_cmd = [python, 'scripts/discover_douyin.py', '--keyword', args.keyword, '--run-id', run_id, '--limit', str(args.douyin_limit)]
+        dy_backend = 'mock' if args.discover_backend == 'mock' else 'file'
+        dy_discover_cmd = [python, 'scripts/discover_douyin.py', '--keyword', args.keyword, '--run-id', run_id, '--limit', str(args.douyin_limit), '--backend', dy_backend]
         douyin_raw_out = run_stage(dy_discover_cmd, cwd, run_id, 'douyin_discover', {
             'keyword': args.keyword,
             'limit': args.douyin_limit,
+            'backend': dy_backend,
             'source': 'douyin',
         })
         if args.douyin_detail_limit > 0:
@@ -282,8 +288,8 @@ def main():
     if args.platform == 'wechat' and not args.wechat_cover:
         raise SystemExit('wechat branch requires --wechat-cover to build frontmatter and API publish payload')
 
-    cwd = '.'
-    python = 'python'
+    cwd = str(SKILL_ROOT)
+    python = sys.executable or 'python'
     run_id = new_run_id('xhs' if args.platform == 'xhs' else 'topic')
 
     append_stage_manifest(run_id, 'pipeline', {

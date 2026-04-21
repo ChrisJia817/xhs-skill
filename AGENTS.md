@@ -12,7 +12,8 @@
 4. `MEMORY.md`
 5. 如果任务涉及小红书工作流：`skills/xhs-trend-to-publish/README.md`
 6. 然后读：`skills/xhs-trend-to-publish/SKILL.md`
-7. 如果是在新电脑落地或环境异常：`docs/setup-new-machine.md`
+7. 如果任务涉及微信公众号分支：`skills/baoyu-post-to-wechat/SKILL.md`
+8. 如果是在新电脑落地或环境异常：`docs/setup-new-machine.md`
 
 ## Working Rules
 
@@ -28,6 +29,8 @@
 - 小红书主流程默认顺序：`discover -> score -> rewrite -> markdown -> render -> publish`
 - 默认优先 `draft` 或 `private`，公开发布必须明确指定
 - 草稿箱目标必须走同 session 的“暂存离开”路径，不要把“点击发布”误判为“已经存草稿”
+- Douyin 链路默认使用仓库内 vendored `MediaCrawler`
+- WeChat 链路默认使用仓库内 `skills/baoyu-post-to-wechat`
 - 内容样本池默认合并三路：
   1. 关键词搜索结果
   2. 高热视频/笔记作者主页样本
