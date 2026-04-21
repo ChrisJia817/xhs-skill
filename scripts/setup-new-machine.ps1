@@ -5,12 +5,39 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Resolve-PythonCommand {
-    $python = Get-Command python -ErrorAction SilentlyContinue
-    if ($python) {
-        return $python.Source
+    $supportedVersions = @('3.12', '3.11')
+    $pyLauncher = Get-Command py -ErrorAction SilentlyContinue
+    if ($pyLauncher) {
+        foreach ($version in $supportedVersions) {
+            try {
+                $resolved = & $pyLauncher.Source "-$version" -c "import sys; print(sys.executable)" 2>$null
+                if ($LASTEXITCODE -eq 0 -and $resolved) {
+                    return $resolved.Trim()
+                }
+            }
+            catch {
+            }
+        }
     }
 
-    throw 'python is not available in PATH.'
+    $python = Get-Command python -ErrorAction SilentlyContinue
+    if ($python) {
+        $version = (& $python.Source -c "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')" 2>$null).Trim()
+        if ($LASTEXITCODE -eq 0 -and ($supportedVersions -contains $version)) {
+            return $python.Source
+        }
+    }
+
+    throw 'A supported Python runtime was not found. Install Python 3.11 or 3.12, or make it available through `py -3.11` / `py -3.12`.'
+}
+
+function Resolve-UvCommand {
+    $uv = Get-Command uv -ErrorAction SilentlyContinue
+    if ($uv) {
+        return $uv.Source
+    }
+
+    throw 'uv is not available in PATH.'
 }
 
 function Resolve-BunCommand {
@@ -152,6 +179,7 @@ function Ensure-WorkspaceDirectories {
 }
 
 $pythonExe = Resolve-PythonCommand
+$uvExe = Resolve-UvCommand
 $autoRedbookRequirements = Join-Path $WorkspaceRoot 'skills\xhs-trend-to-publish\vendor\Auto-Redbook-Skills\requirements.txt'
 $xhsSkillsRequirements = Join-Path $WorkspaceRoot 'skills\xhs-trend-to-publish\vendor\XiaohongshuSkills\requirements.txt'
 $mediaCrawlerRoot = Join-Path $WorkspaceRoot 'skills\xhs-trend-to-publish\vendor\MediaCrawler'
@@ -164,12 +192,12 @@ Install-PythonRequirements -PythonExe $pythonExe -RequirementsFile $xhsSkillsReq
 Install-PythonPlaywrightChromium -PythonExe $pythonExe -Label 'workspace Python environment'
 
 if (Test-Path $mediaCrawlerRoot) {
-    Write-Host "Installing MediaCrawler dependencies with uv sync..."
+        Write-Host "Installing MediaCrawler dependencies with uv sync..."
     Push-Location $mediaCrawlerRoot
     try {
-        Invoke-CheckedCommand -Command 'uv' -Arguments @('sync') -Label 'MediaCrawler uv sync'
+        Invoke-CheckedCommand -Command $uvExe -Arguments @('sync') -Label 'MediaCrawler uv sync'
         Write-Host "Installing Chromium browser for MediaCrawler..."
-        Invoke-CheckedCommand -Command 'uv' -Arguments @('run', 'python', '-m', 'playwright', 'install', 'chromium') -Label 'MediaCrawler playwright install'
+        Invoke-CheckedCommand -Command $uvExe -Arguments @('run', 'python', '-m', 'playwright', 'install', 'chromium') -Label 'MediaCrawler playwright install'
     }
     finally {
         Pop-Location

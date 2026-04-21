@@ -1,7 +1,8 @@
 import argparse
-import subprocess
 import json
 import re
+import subprocess
+import sys
 from bootstrap import ROOT
 from common import write_json, ensure_dir, new_run_id, append_stage_manifest, iso_now
 from vendor_paths import XHS_SCRIPTS_DIR
@@ -26,7 +27,7 @@ def main():
     args = parser.parse_args()
 
     run_id = args.run_id or new_run_id('xhs-home')
-    cmd = ['python', str(XHS_SCRIPTS_DIR / 'cdp_publish.py')]
+    cmd = [sys.executable, str(XHS_SCRIPTS_DIR / 'cdp_publish.py')]
     if args.account:
         cmd.extend(['--account', args.account])
     cmd.append('list-feeds')

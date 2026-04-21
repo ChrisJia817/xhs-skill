@@ -2,6 +2,7 @@ import argparse
 import json
 import re
 import subprocess
+import sys
 from bootstrap import ROOT
 from common import read_json, write_json, ensure_dir, append_stage_manifest, iso_now
 
@@ -106,7 +107,7 @@ def main():
             continue
 
         cmd = [
-            'python',
+            sys.executable,
             str(ROOT / 'vendor' / 'XiaohongshuSkills' / 'scripts' / 'cdp_publish.py'),
         ]
         if args.account:

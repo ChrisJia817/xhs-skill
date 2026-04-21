@@ -1,7 +1,8 @@
 import argparse
-import subprocess
 import json
 import re
+import subprocess
+import sys
 from bootstrap import ROOT
 from common import new_run_id, write_json, ensure_dir, append_stage_manifest, iso_now
 
@@ -75,7 +76,7 @@ def discover_cdp(
     location: str = '不限',
 ):
     cmd = [
-        'python',
+        sys.executable,
         str(ROOT / 'vendor' / 'XiaohongshuSkills' / 'scripts' / 'cdp_publish.py'),
     ]
     if account:

@@ -19,12 +19,30 @@ function Resolve-GitCommand {
 }
 
 function Resolve-PythonCommand {
-    $python = Get-Command python -ErrorAction SilentlyContinue
-    if ($python) {
-        return $python.Source
+    $supportedVersions = @('3.12', '3.11')
+    $pyLauncher = Get-Command py -ErrorAction SilentlyContinue
+    if ($pyLauncher) {
+        foreach ($version in $supportedVersions) {
+            try {
+                $resolved = & $pyLauncher.Source "-$version" -c "import sys; print(sys.executable)" 2>$null
+                if ($LASTEXITCODE -eq 0 -and $resolved) {
+                    return $resolved.Trim()
+                }
+            }
+            catch {
+            }
+        }
     }
 
-    throw 'python is not available in PATH.'
+    $python = Get-Command python -ErrorAction SilentlyContinue
+    if ($python) {
+        $version = (& $python.Source -c "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')" 2>$null).Trim()
+        if ($LASTEXITCODE -eq 0 -and ($supportedVersions -contains $version)) {
+            return $python.Source
+        }
+    }
+
+    throw 'A supported Python runtime was not found. Install Python 3.11 or 3.12, or make it available through `py -3.11` / `py -3.12`.'
 }
 
 function Resolve-PowerShellCommand {
