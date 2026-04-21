@@ -12,6 +12,7 @@ from vendor_paths import resolve_mediacrawler_output, resolve_mediacrawler_root,
 MEDIA_CRAWLER_OUTPUT = resolve_mediacrawler_output()
 MEDIA_CRAWLER_ROOT = resolve_mediacrawler_root()
 MEDIA_CRAWLER_SAVE_ROOT = resolve_mediacrawler_save_root()
+SEARCH_OUTPUT_TIMEOUT_SEC = 30.0
 
 
 def find_latest_search_file() -> Path:
@@ -34,6 +35,16 @@ def newest_file_from_diff(before: set[str], pattern: str) -> Path | None:
     return existing[0] if existing else None
 
 
+def wait_for_recent_file(before: set[str], pattern: str, started_at: float, timeout_sec: float) -> Path | None:
+    deadline = time.monotonic() + timeout_sec
+    while time.monotonic() <= deadline:
+        candidate = newest_file_from_diff(before, pattern)
+        if candidate and candidate.exists() and candidate.stat().st_mtime >= started_at - 1e-6:
+            return candidate
+        time.sleep(1)
+    return None
+
+
 def run_search_fetch(keyword: str, login_type: str, headless: bool) -> tuple[Path, list[str]]:
     uv = shutil.which('uv')
     if not uv:
@@ -43,6 +54,7 @@ def run_search_fetch(keyword: str, login_type: str, headless: bool) -> tuple[Pat
 
     before_contents = snapshot_files('search_contents_*.json')
     ensure_dir(MEDIA_CRAWLER_OUTPUT)
+    started_at = time.time()
 
     command = [
         uv, 'run', 'main.py',
@@ -57,11 +69,10 @@ def run_search_fetch(keyword: str, login_type: str, headless: bool) -> tuple[Pat
         '--headless', 'true' if headless else 'false',
     ]
     subprocess.run(command, cwd=str(MEDIA_CRAWLER_ROOT), check=True)
-    time.sleep(1)
 
-    source_path = newest_file_from_diff(before_contents, 'search_contents_*.json')
+    source_path = wait_for_recent_file(before_contents, 'search_contents_*.json', started_at, SEARCH_OUTPUT_TIMEOUT_SEC)
     if not source_path:
-        raise SystemExit(f'No MediaCrawler Douyin search output file found under {MEDIA_CRAWLER_OUTPUT}.')
+        raise SystemExit(f'No fresh MediaCrawler Douyin search output file found under {MEDIA_CRAWLER_OUTPUT}.')
     return source_path, command
 
 

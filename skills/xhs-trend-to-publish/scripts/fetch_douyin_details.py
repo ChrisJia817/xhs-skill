@@ -11,6 +11,7 @@ from vendor_paths import resolve_mediacrawler_root, resolve_mediacrawler_output,
 MEDIA_CRAWLER_ROOT = resolve_mediacrawler_root()
 MEDIA_CRAWLER_OUTPUT = resolve_mediacrawler_output()
 MEDIA_CRAWLER_SAVE_ROOT = resolve_mediacrawler_save_root()
+DETAIL_OUTPUT_TIMEOUT_SEC = 30.0
 
 
 def load_json_file(path: Path):
@@ -35,9 +36,20 @@ def newest_file_from_diff(before: set[str], pattern: str) -> Path | None:
     return existing[0] if existing else None
 
 
-def run_detail_fetch(aweme_id: str, comment_limit: int) -> tuple[Path | None, Path | None, list[str]]:
+def wait_for_recent_file(before: set[str], pattern: str, started_at: float, timeout_sec: float) -> Path | None:
+    deadline = time.monotonic() + timeout_sec
+    while time.monotonic() <= deadline:
+        candidate = newest_file_from_diff(before, pattern)
+        if candidate and candidate.exists() and candidate.stat().st_mtime >= started_at - 1e-6:
+            return candidate
+        time.sleep(1)
+    return None
+
+
+def run_detail_fetch(aweme_id: str, comment_limit: int, login_type: str, headless: bool) -> tuple[Path | None, Path | None, list[str]]:
     before_contents = snapshot_files('detail_contents_*.json')
     before_comments = snapshot_files('detail_comments_*.json')
+    started_at = time.time()
 
     uv = shutil.which('uv')
     if not uv:
@@ -46,7 +58,7 @@ def run_detail_fetch(aweme_id: str, comment_limit: int) -> tuple[Path | None, Pa
     command = [
         uv, 'run', 'main.py',
         '--platform', 'dy',
-        '--lt', 'qrcode',
+        '--lt', login_type,
         '--type', 'detail',
         '--specified_id', aweme_id,
         '--save_data_option', 'json',
@@ -54,13 +66,16 @@ def run_detail_fetch(aweme_id: str, comment_limit: int) -> tuple[Path | None, Pa
         '--max_comments_count_singlenotes', str(comment_limit),
         '--max_concurrency_num', '1',
         '--get_comment', 'true' if comment_limit > 0 else 'false',
-        '--headless', 'true',
+        '--headless', 'true' if headless else 'false',
     ]
     subprocess.run(command, cwd=str(MEDIA_CRAWLER_ROOT), check=True)
-    time.sleep(1)
+    content_file = wait_for_recent_file(before_contents, 'detail_contents_*.json', started_at, DETAIL_OUTPUT_TIMEOUT_SEC)
+    comment_file = None
+    if comment_limit > 0:
+        comment_file = wait_for_recent_file(before_comments, 'detail_comments_*.json', started_at, DETAIL_OUTPUT_TIMEOUT_SEC)
     return (
-        newest_file_from_diff(before_contents, 'detail_contents_*.json'),
-        newest_file_from_diff(before_comments, 'detail_comments_*.json'),
+        content_file,
+        comment_file,
         command,
     )
 
@@ -94,6 +109,8 @@ def main():
 
     data = read_json(args.input)
     run_id = data['run_id']
+    login_type = data.get('login_type') or 'qrcode'
+    headless = bool(data.get('headless'))
     candidates = data.get('candidates', [])
     if not candidates:
         append_stage_manifest(run_id, 'douyin_fetch_details', {
@@ -115,7 +132,7 @@ def main():
             fetch_logs.append({'aweme_id': '', 'status': 'skipped', 'reason': 'missing_aweme_id'})
             continue
         try:
-            content_file, comment_file, command = run_detail_fetch(aweme_id, args.comment_limit)
+            content_file, comment_file, command = run_detail_fetch(aweme_id, args.comment_limit, login_type, headless)
             detail_items = load_json_file(content_file) if content_file else []
             comment_items = load_json_file(comment_file) if comment_file else []
             matched_details = [detail for detail in detail_items if str(detail.get('aweme_id') or '') == aweme_id]

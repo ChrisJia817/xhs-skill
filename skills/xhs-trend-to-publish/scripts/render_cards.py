@@ -2,6 +2,7 @@ import argparse
 import subprocess
 import os
 import shutil
+import sys
 from bootstrap import ROOT
 from vendor_paths import AUTO_REDBOOK_DIR
 from common import append_stage_manifest, iso_now
@@ -84,7 +85,7 @@ def main():
         env = os.environ.copy()
         env['PYTHONIOENCODING'] = 'utf-8'
         cmd = [
-            'python',
+            sys.executable,
             str(AUTO_REDBOOK_DIR / 'scripts' / 'render_xhs.py'),
             str(md_path),
             '--output-dir', str(run_dir),

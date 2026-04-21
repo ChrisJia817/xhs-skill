@@ -2,6 +2,7 @@ import argparse
 import os
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 from common import read_json, append_stage_manifest, iso_now, new_run_id, resolve_wechat_account_settings
 
@@ -291,15 +292,10 @@ def main():
     parser.add_argument('--xhs-rewrite-from', default='score', choices=['score', 'brief'])
     args = parser.parse_args()
 
-    if args.publish_backend == 'cdp' and args.mode != 'draft':
-        raise SystemExit('cdp backend currently supports draft mode only; use --mode draft or switch publish backend')
-
-    if args.platform == 'wechat' and not args.wechat_cover:
-        raise SystemExit('wechat branch requires --wechat-cover to build frontmatter and API publish payload')
-
     cwd = str(SKILL_ROOT)
     python = sys.executable or 'python'
     run_id = new_run_id('xhs' if args.platform == 'xhs' else 'topic')
+    outputs = {}
 
     append_stage_manifest(run_id, 'pipeline', {
         'status': 'running',
@@ -333,51 +329,64 @@ def main():
         },
     })
 
-    outputs = {}
+    try:
+        if args.publish_backend == 'cdp' and args.mode != 'draft':
+            raise SystemExit('cdp backend currently supports draft mode only; use --mode draft or switch publish backend')
 
-    if args.platform == 'brief':
-        outputs.update(run_unified_brief_pipeline(python, cwd, run_id, args))
-    elif args.platform == 'wechat':
-        outputs.update(run_unified_brief_pipeline(python, cwd, run_id, args))
-        outputs.update(run_wechat_branch(python, cwd, run_id, outputs['topic_brief'], args))
-    else:
-        if args.xhs_reading_sources:
+        if args.platform == 'wechat' and not args.wechat_cover:
+            raise SystemExit('wechat branch requires --wechat-cover to build frontmatter and API publish payload')
+
+        if args.platform == 'brief':
             outputs.update(run_unified_brief_pipeline(python, cwd, run_id, args))
-            outputs.update(run_xhs_branch(python, cwd, run_id, outputs['xhs_score'], args, brief_input=outputs.get('topic_brief', '')))
+        elif args.platform == 'wechat':
+            outputs.update(run_unified_brief_pipeline(python, cwd, run_id, args))
+            outputs.update(run_wechat_branch(python, cwd, run_id, outputs['topic_brief'], args))
         else:
-            discover_cmd = [python, 'scripts/discover_trends.py', '--keyword', args.keyword, '--publish-time', args.publish_time, '--backend', args.discover_backend, '--run-id', run_id]
-            if args.account:
-                discover_cmd.extend(['--account', args.account])
-            discover_out = run_stage(discover_cmd, cwd, run_id, 'discover-bootstrap', {
-                'keyword': args.keyword,
-                'publish_time': args.publish_time,
-                'backend': args.discover_backend,
-                'account': args.account,
-                'platform': args.platform,
-            })
-
-            discover_data = read_json(discover_out)
-            run_id = discover_data['run_id']
-            score_out = run_stage([python, 'scripts/score_trends.py', '--input', discover_out], cwd, run_id, 'score', {
-                'input': discover_out,
-            })
-            outputs = {
-                'discover': discover_out,
-                'score': score_out,
-            }
-            outputs.update(run_xhs_branch(python, cwd, run_id, score_out, args))
-
-            if args.collect_metrics:
-                metrics_out = run_stage([python, 'scripts/collect_metrics.py', '--run-id', run_id], cwd, run_id, 'metrics', {
-                    'run_id': run_id,
+            if args.xhs_reading_sources:
+                outputs.update(run_unified_brief_pipeline(python, cwd, run_id, args))
+                outputs.update(run_xhs_branch(python, cwd, run_id, outputs['xhs_score'], args, brief_input=outputs.get('topic_brief', '')))
+            else:
+                discover_cmd = [python, 'scripts/discover_trends.py', '--keyword', args.keyword, '--publish-time', args.publish_time, '--backend', args.discover_backend, '--run-id', run_id]
+                if args.account:
+                    discover_cmd.extend(['--account', args.account])
+                discover_out = run_stage(discover_cmd, cwd, run_id, 'discover-bootstrap', {
+                    'keyword': args.keyword,
+                    'publish_time': args.publish_time,
+                    'backend': args.discover_backend,
+                    'account': args.account,
+                    'platform': args.platform,
                 })
-                outputs['metrics'] = metrics_out
+                discover_data = read_json(discover_out)
+                run_id = discover_data['run_id']
+                score_out = run_stage([python, 'scripts/score_trends.py', '--input', discover_out], cwd, run_id, 'score', {
+                    'input': discover_out,
+                })
+                outputs = {
+                    'discover': discover_out,
+                    'score': score_out,
+                }
+                outputs.update(run_xhs_branch(python, cwd, run_id, score_out, args))
 
-    append_stage_manifest(run_id, 'pipeline', {
-        'status': 'success',
-        'finished_at': iso_now(),
-        'outputs': outputs,
-    })
+                if args.collect_metrics:
+                    metrics_out = run_stage([python, 'scripts/collect_metrics.py', '--run-id', run_id], cwd, run_id, 'metrics', {
+                        'run_id': run_id,
+                    })
+                    outputs['metrics'] = metrics_out
+    except BaseException as exc:
+        append_stage_manifest(run_id, 'pipeline', {
+            'status': 'failed',
+            'finished_at': iso_now(),
+            'outputs': outputs,
+            'error': repr(exc),
+            'traceback': traceback.format_exc(),
+        })
+        raise
+    else:
+        append_stage_manifest(run_id, 'pipeline', {
+            'status': 'success',
+            'finished_at': iso_now(),
+            'outputs': outputs,
+        })
 
     print('run_id=' + run_id)
     for key, value in outputs.items():

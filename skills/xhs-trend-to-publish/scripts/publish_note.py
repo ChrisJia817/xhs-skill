@@ -103,27 +103,11 @@ def main():
             body_without_tags, _ = extract_topic_tags_from_last_line(draft.get('body', ''))
             tags = build_topic_tags(keyword, draft.get('title', ''), draft.get('body', ''))
 
-            publisher_kwargs = {}
-            current_account = account_targets[0]
-            if current_account:
-                publisher_kwargs['account_name'] = current_account
-            publisher = XiaohongshuPublisher(**publisher_kwargs)
-            publisher.connect()
-            publisher._navigate(XHS_CREATOR_URL)
-            publisher._sleep(2, minimum_seconds=1.0)
-            publisher._click_image_text_tab()
-            publisher._sleep(2, minimum_seconds=1.0)
-            publisher._upload_images(assets)
-            publisher._sleep(2, minimum_seconds=1.0)
-            publisher._fill_title((draft.get('title') or '')[:20])
-            publisher._sleep(1, minimum_seconds=0.5)
-            publisher._fill_content(body_without_tags)
-            publisher._sleep(1, minimum_seconds=0.5)
             details['fill'] = {
                 'returncode': 0,
                 'title': (draft.get('title') or '')[:20],
                 'assets': assets,
-                'account': current_account,
+                'account': account_targets[0],
                 'accounts': account_targets,
                 'draft_path': str(draft_path),
                 'draft_index': selected_draft_index,
@@ -132,6 +116,7 @@ def main():
             publish_runs = []
             for current_account in account_targets:
                 run_detail = {'account': current_account, 'status': 'pending'}
+                publisher = None
                 try:
                     publisher_kwargs = {}
                     if current_account:
@@ -164,6 +149,12 @@ def main():
                     run_detail['status'] = 'failed'
                     run_detail['error'] = repr(account_exc)
                     run_detail['traceback'] = traceback.format_exc()
+                finally:
+                    if publisher is not None:
+                        try:
+                            publisher.disconnect()
+                        except Exception:
+                            pass
                 publish_runs.append(run_detail)
 
             details['publish_runs'] = publish_runs
