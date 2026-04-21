@@ -39,6 +39,14 @@ git clone https://github.com/ChrisJia817/xhs-skill.git
 cd xhs-skill
 ```
 
+如果你希望它直接安装到本机 OpenClaw 默认使用的 workspace，而不是停留在当前 clone 目录，可以直接执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-openclaw-workspace.ps1
+```
+
+这个脚本会优先自动探测当前机器已有的 OpenClaw 路径；如果还没有，它会按当前机器盘符创建新的 `OpenClaw\.openclaw\workspace`，并在覆盖前自动备份已有的非目标 workspace。
+
 ## 2. 准备基础工具
 
 至少准备：

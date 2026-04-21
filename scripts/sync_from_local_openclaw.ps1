@@ -1,12 +1,37 @@
 param(
-    [string]$SourceWorkspace = 'D:\OpenClaw\.openclaw\workspace',
+    [string]$SourceWorkspace = '',
     [string]$DestinationWorkspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
     [string]$SkillName = 'xhs-trend-to-publish',
-    [string]$MediaCrawlerRoot = 'D:\OpenClaw\state\tmp\mediacrawler-review',
-    [string]$BaoyuSkillsRoot = 'D:\OpenClaw\state\tmp\baoyu-skills-review'
+    [string]$MediaCrawlerRoot = '',
+    [string]$BaoyuSkillsRoot = ''
 )
 
 $ErrorActionPreference = 'Stop'
+
+. (Join-Path $PSScriptRoot 'openclaw-paths.ps1')
+
+$SourceWorkspace = Resolve-OpenClawWorkspacePath -PreferredWorkspace $SourceWorkspace -SeedPath $DestinationWorkspace
+$resolvedStateTmp = Resolve-OpenClawStateTmpPath -WorkspacePath $SourceWorkspace -SeedPath $DestinationWorkspace
+
+if (-not $MediaCrawlerRoot) {
+    $MediaCrawlerRoot = Resolve-OpenClawReviewPath -ReviewDirectoryName 'mediacrawler-review' -StateTmpPath $resolvedStateTmp
+}
+elseif (Test-Path -LiteralPath $MediaCrawlerRoot) {
+    $MediaCrawlerRoot = (Resolve-Path -LiteralPath $MediaCrawlerRoot).Path
+}
+else {
+    $MediaCrawlerRoot = Resolve-FullPath -Path $MediaCrawlerRoot
+}
+
+if (-not $BaoyuSkillsRoot) {
+    $BaoyuSkillsRoot = Resolve-OpenClawReviewPath -ReviewDirectoryName 'baoyu-skills-review' -StateTmpPath $resolvedStateTmp
+}
+elseif (Test-Path -LiteralPath $BaoyuSkillsRoot) {
+    $BaoyuSkillsRoot = (Resolve-Path -LiteralPath $BaoyuSkillsRoot).Path
+}
+else {
+    $BaoyuSkillsRoot = Resolve-FullPath -Path $BaoyuSkillsRoot
+}
 
 function Copy-RelativePath {
     param(

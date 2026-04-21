@@ -11,6 +11,12 @@ git clone https://github.com/ChrisJia817/xhs-skill.git
 cd xhs-skill
 ```
 
+如果你想把仓库一键安装进本机自动探测出的 OpenClaw workspace，也可以在 clone 后直接执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-openclaw-workspace.ps1
+```
+
 ## 2. 准备最小基础环境
 
 至少准备：

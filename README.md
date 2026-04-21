@@ -59,6 +59,12 @@
 
 - [详细部署文档](docs/setup-new-machine.md)
 
+如果你已经把仓库 clone 到任意目录，但想一键安装进本机自动探测出的 OpenClaw workspace，可以直接执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-openclaw-workspace.ps1
+```
+
 ## Agent 入口
 
 给 agent 的推荐阅读顺序在这里：
@@ -116,7 +122,7 @@ python skills/xhs-trend-to-publish/scripts/pipeline.py --platform brief --source
 powershell -ExecutionPolicy Bypass -File .\scripts\sync_from_local_openclaw.ps1
 ```
 
-默认同步源是 `D:\OpenClaw\.openclaw\workspace`，会自动排除：
+脚本会自动探测当前机器上的 OpenClaw workspace 和 `state\tmp` review 目录；必要时也可以用参数覆盖。同步时会自动排除：
 
 - `data/`
 - `temp/`
