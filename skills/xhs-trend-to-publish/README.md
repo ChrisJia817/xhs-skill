@@ -51,6 +51,8 @@ python skills/xhs-trend-to-publish/scripts/check_environment.py
 python scripts/pipeline.py --platform brief --sources xhs douyin --keyword "AI" --publish-time "半年内" --discover-backend mock --douyin-detail-limit 0
 ```
 
+如果你要跑真实的 Douyin 样本发现，不再需要先手动跑一遍 `MediaCrawler search`。现在 `pipeline.py` 在非 mock 模式下会自动调用 `MediaCrawler` 生成最新的 `search_contents_*.json`，再继续后续合并和 detail enrichment。
+
 ## 路径解析默认规则
 
 当前脚本会优先按这个顺序找依赖：
@@ -60,6 +62,20 @@ python scripts/pipeline.py --platform brief --sources xhs douyin --keyword "AI" 
 1. `XHS_DOUYIN_MEDIACRAWLER_ROOT`
 2. `vendor/MediaCrawler`
 3. `external/MediaCrawler`
+
+### Douyin / MediaCrawler 输出目录
+
+1. `XHS_DOUYIN_OUTPUT_ROOT`
+2. `data/douyin/json`
+3. `external-data/douyin/json`
+
+`XHS_DOUYIN_OUTPUT_ROOT` 可以直接指向：
+
+- `...\douyin\json`
+- `...\douyin`
+- `MediaCrawler` 的保存根目录
+
+脚本会自动归一化到真正的 `douyin/json` 目录。
 
 ### WeChat API
 

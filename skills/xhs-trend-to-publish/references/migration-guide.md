@@ -49,6 +49,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup-new-machine.ps1
 
 - 单账号覆盖优先级高于 `XHS_PROFILE_DIR`
 - 如果都不设置，脚本会回退到仓库内置默认路径
+- `XHS_DOUYIN_OUTPUT_ROOT` 可以传 `douyin\json`、`douyin`，或者 `MediaCrawler` 的保存根目录；workflow 会自动换算成真实的 JSON 输出目录
 
 ## 账号配置
 
@@ -93,6 +94,8 @@ python ../scripts/check_environment.py
 3. 验证小红书登录
 4. 验证草稿或私密发布
 5. 需要时再验证公众号 API 发布
+
+如果你把 `--discover-backend` 切到非 mock，Douyin 分支现在会自动调用 `MediaCrawler search`，不需要再手动预跑一次搜索。
 
 ## 常见问题
 

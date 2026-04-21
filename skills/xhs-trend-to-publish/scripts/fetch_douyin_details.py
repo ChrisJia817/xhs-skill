@@ -6,10 +6,11 @@ import time
 from pathlib import Path
 from bootstrap import ROOT
 from common import read_json, write_json, ensure_dir, append_stage_manifest, iso_now
-from vendor_paths import resolve_mediacrawler_root, resolve_mediacrawler_output
+from vendor_paths import resolve_mediacrawler_root, resolve_mediacrawler_output, resolve_mediacrawler_save_root
 
 MEDIA_CRAWLER_ROOT = resolve_mediacrawler_root()
 MEDIA_CRAWLER_OUTPUT = resolve_mediacrawler_output()
+MEDIA_CRAWLER_SAVE_ROOT = resolve_mediacrawler_save_root()
 
 
 def load_json_file(path: Path):
@@ -49,7 +50,7 @@ def run_detail_fetch(aweme_id: str, comment_limit: int) -> tuple[Path | None, Pa
         '--type', 'detail',
         '--specified_id', aweme_id,
         '--save_data_option', 'json',
-        '--save_data_path', str(MEDIA_CRAWLER_OUTPUT.parent.parent),
+        '--save_data_path', str(MEDIA_CRAWLER_SAVE_ROOT),
         '--max_comments_count_singlenotes', str(comment_limit),
         '--max_concurrency_num', '1',
         '--get_comment', 'true' if comment_limit > 0 else 'false',

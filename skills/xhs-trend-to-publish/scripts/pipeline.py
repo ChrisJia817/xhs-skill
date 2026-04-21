@@ -1,4 +1,5 @@
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -201,12 +202,18 @@ def run_unified_brief_pipeline(python: str, cwd: str, run_id: str, args) -> dict
         outputs['xhs_score'] = xhs_score_out
 
     if 'douyin' in args.sources:
-        dy_backend = 'mock' if args.discover_backend == 'mock' else 'file'
+        dy_backend = 'mock' if args.discover_backend == 'mock' else 'mediacrawler'
         dy_discover_cmd = [python, 'scripts/discover_douyin.py', '--keyword', args.keyword, '--run-id', run_id, '--limit', str(args.douyin_limit), '--backend', dy_backend]
+        if dy_backend == 'mediacrawler':
+            dy_discover_cmd.extend(['--login-type', args.douyin_login_type])
+            if args.douyin_headless:
+                dy_discover_cmd.append('--headless')
         douyin_raw_out = run_stage(dy_discover_cmd, cwd, run_id, 'douyin_discover', {
             'keyword': args.keyword,
             'limit': args.douyin_limit,
             'backend': dy_backend,
+            'login_type': args.douyin_login_type if dy_backend == 'mediacrawler' else '',
+            'headless': args.douyin_headless if dy_backend == 'mediacrawler' else False,
             'source': 'douyin',
         })
         if args.douyin_detail_limit > 0:
@@ -274,6 +281,8 @@ def main():
     parser.add_argument('--douyin-limit', type=int, default=10)
     parser.add_argument('--douyin-detail-limit', type=int, default=3)
     parser.add_argument('--douyin-comment-limit', type=int, default=5)
+    parser.add_argument('--douyin-login-type', default=os.environ.get('XHS_DOUYIN_LOGIN_TYPE', 'qrcode') or 'qrcode')
+    parser.add_argument('--douyin-headless', action='store_true')
     parser.add_argument('--wechat-template', default='pain-method-conversion')
     parser.add_argument('--wechat-cover', default='')
     parser.add_argument('--wechat-theme', default='default')
@@ -313,6 +322,8 @@ def main():
             'douyin_limit': args.douyin_limit,
             'douyin_detail_limit': args.douyin_detail_limit,
             'douyin_comment_limit': args.douyin_comment_limit,
+            'douyin_login_type': args.douyin_login_type,
+            'douyin_headless': args.douyin_headless,
             'wechat_template': args.wechat_template,
             'wechat_cover': args.wechat_cover,
             'wechat_theme': args.wechat_theme,

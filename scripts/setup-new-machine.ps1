@@ -129,6 +129,7 @@ function Ensure-WorkspaceDirectories {
         'skills\xhs-trend-to-publish\data\briefs',
         'skills\xhs-trend-to-publish\data\douyin\detail-cache',
         'skills\xhs-trend-to-publish\data\douyin\enriched',
+        'skills\xhs-trend-to-publish\data\douyin\json',
         'skills\xhs-trend-to-publish\data\douyin\raw',
         'skills\xhs-trend-to-publish\data\drafts',
         'skills\xhs-trend-to-publish\data\merged',

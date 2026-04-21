@@ -1,11 +1,17 @@
 import argparse
 import json
+import os
+import shutil
+import subprocess
+import time
 from pathlib import Path
 from bootstrap import ROOT
 from common import write_json, ensure_dir, new_run_id, append_stage_manifest, iso_now
-from vendor_paths import resolve_mediacrawler_output
+from vendor_paths import resolve_mediacrawler_output, resolve_mediacrawler_root, resolve_mediacrawler_save_root
 
 MEDIA_CRAWLER_OUTPUT = resolve_mediacrawler_output()
+MEDIA_CRAWLER_ROOT = resolve_mediacrawler_root()
+MEDIA_CRAWLER_SAVE_ROOT = resolve_mediacrawler_save_root()
 
 
 def find_latest_search_file() -> Path:
@@ -13,6 +19,50 @@ def find_latest_search_file() -> Path:
     if not files:
         raise SystemExit('No MediaCrawler Douyin search output file found.')
     return files[0]
+
+
+def snapshot_files(pattern: str) -> set[str]:
+    ensure_dir(MEDIA_CRAWLER_OUTPUT)
+    return {str(path.resolve()) for path in MEDIA_CRAWLER_OUTPUT.glob(pattern)}
+
+
+def newest_file_from_diff(before: set[str], pattern: str) -> Path | None:
+    after = [path for path in MEDIA_CRAWLER_OUTPUT.glob(pattern) if str(path.resolve()) not in before]
+    if after:
+        return sorted(after, key=lambda path: path.stat().st_mtime, reverse=True)[0]
+    existing = sorted(MEDIA_CRAWLER_OUTPUT.glob(pattern), key=lambda path: path.stat().st_mtime, reverse=True)
+    return existing[0] if existing else None
+
+
+def run_search_fetch(keyword: str, login_type: str, headless: bool) -> tuple[Path, list[str]]:
+    uv = shutil.which('uv')
+    if not uv:
+        raise SystemExit('uv is not available in PATH; required for MediaCrawler Douyin search.')
+    if not MEDIA_CRAWLER_ROOT.exists():
+        raise SystemExit(f'MediaCrawler root not found: {MEDIA_CRAWLER_ROOT}')
+
+    before_contents = snapshot_files('search_contents_*.json')
+    ensure_dir(MEDIA_CRAWLER_OUTPUT)
+
+    command = [
+        uv, 'run', 'main.py',
+        '--platform', 'dy',
+        '--lt', login_type,
+        '--type', 'search',
+        '--keywords', keyword,
+        '--save_data_option', 'json',
+        '--save_data_path', str(MEDIA_CRAWLER_SAVE_ROOT),
+        '--get_comment', 'false',
+        '--max_concurrency_num', '1',
+        '--headless', 'true' if headless else 'false',
+    ]
+    subprocess.run(command, cwd=str(MEDIA_CRAWLER_ROOT), check=True)
+    time.sleep(1)
+
+    source_path = newest_file_from_diff(before_contents, 'search_contents_*.json')
+    if not source_path:
+        raise SystemExit(f'No MediaCrawler Douyin search output file found under {MEDIA_CRAWLER_OUTPUT}.')
+    return source_path, command
 
 
 def load_json_file(path: Path):
@@ -76,13 +126,21 @@ def main():
     parser.add_argument('--keyword', required=True)
     parser.add_argument('--run-id', default='')
     parser.add_argument('--limit', type=int, default=15)
-    parser.add_argument('--backend', default='file', choices=['file', 'mock'])
+    parser.add_argument('--backend', default='file', choices=['file', 'mock', 'mediacrawler'])
+    parser.add_argument('--login-type', default=os.environ.get('XHS_DOUYIN_LOGIN_TYPE', 'qrcode') or 'qrcode')
+    parser.add_argument('--headless', action='store_true')
     args = parser.parse_args()
 
     run_id = args.run_id or new_run_id('dy')
     source_file = ''
+    search_command: list[str] = []
     if args.backend == 'mock':
         candidates = build_mock_candidates(args.keyword, args.limit)
+    elif args.backend == 'mediacrawler':
+        source_path, search_command = run_search_fetch(args.keyword, args.login_type, args.headless)
+        source_file = str(source_path)
+        items = load_json_file(source_path)
+        candidates = [normalize_item(item) for item in items[:max(1, args.limit)] if isinstance(item, dict)]
     else:
         source_path = find_latest_search_file()
         source_file = str(source_path)
@@ -96,8 +154,11 @@ def main():
         'generated_at': iso_now(),
         'keyword': args.keyword,
         'backend': args.backend,
+        'login_type': args.login_type if args.backend == 'mediacrawler' else '',
+        'headless': args.headless if args.backend == 'mediacrawler' else False,
         'candidate_count': len(candidates),
         'source_file': source_file,
+        'search_command': search_command,
         'candidates': candidates,
     }
 
@@ -109,7 +170,10 @@ def main():
         'finished_at': iso_now(),
         'keyword': args.keyword,
         'backend': args.backend,
+        'login_type': args.login_type if args.backend == 'mediacrawler' else '',
+        'headless': args.headless if args.backend == 'mediacrawler' else False,
         'source_file': source_file,
+        'search_command': search_command,
         'output': str(out_path),
         'candidate_count': len(candidates),
     })

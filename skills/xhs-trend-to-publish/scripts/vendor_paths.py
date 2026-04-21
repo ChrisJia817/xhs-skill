@@ -24,6 +24,23 @@ def _resolve_path(env_name: str, defaults: list[Path]) -> Path:
     return env_path or defaults[0]
 
 
+def _normalize_mediacrawler_output(path: Path | None) -> Path | None:
+    if path is None:
+        return None
+
+    expanded = path.expanduser()
+    path_name = expanded.name.lower()
+    parent_name = expanded.parent.name.lower() if expanded.parent else ''
+
+    if path_name == 'json':
+        return expanded
+    if path_name == 'douyin':
+        return expanded / 'json'
+    if parent_name == 'douyin':
+        return expanded
+    return expanded / 'douyin' / 'json'
+
+
 def resolve_mediacrawler_root() -> Path:
     return _resolve_path(
         'XHS_DOUYIN_MEDIACRAWLER_ROOT',
@@ -35,13 +52,25 @@ def resolve_mediacrawler_root() -> Path:
 
 
 def resolve_mediacrawler_output() -> Path:
-    return _resolve_path(
-        'XHS_DOUYIN_OUTPUT_ROOT',
-        [
-            ROOT / 'data' / 'douyin' / 'raw',
-            WORKSPACE_ROOT / 'external-data' / 'douyin' / 'json',
-        ],
-    )
+    defaults = [
+        ROOT / 'data' / 'douyin' / 'json',
+        WORKSPACE_ROOT / 'external-data' / 'douyin' / 'json',
+    ]
+    env_path = _normalize_mediacrawler_output(_env_path('XHS_DOUYIN_OUTPUT_ROOT'))
+    candidates = [env_path, *[_normalize_mediacrawler_output(path) for path in defaults]]
+    for path in candidates:
+        if path and path.exists():
+            return path
+    return env_path or candidates[1]
+
+
+def resolve_mediacrawler_save_root() -> Path:
+    output_root = resolve_mediacrawler_output()
+    if output_root.name.lower() == 'json' and output_root.parent.name.lower() == 'douyin':
+        return output_root.parent.parent
+    if output_root.name.lower() == 'douyin':
+        return output_root.parent
+    return output_root
 
 
 def resolve_wechat_api_script() -> Path:
