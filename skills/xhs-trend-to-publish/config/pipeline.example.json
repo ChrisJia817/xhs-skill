@@ -1,0 +1,52 @@
+{
+  "default_backend": "mock",
+  "default_mode": "private",
+  "default_theme": "professional",
+  "default_publish_time": "半年内",
+  "output_root": "data",
+  "top_k": 3,
+  "min_score_to_publish": 60,
+  "account": "default",
+  "persona": "general",
+  "allow_public_publish": false,
+  "pipeline": {
+    "default_platform": "xhs",
+    "supported_sources": ["xhs", "douyin"],
+    "default_sources": ["xhs"],
+    "douyin": {
+      "default_limit": 10,
+      "default_detail_limit": 3,
+      "default_comment_limit": 5
+    }
+  },
+  "wechat": {
+    "enabled": false,
+    "default_publish_method": "api",
+    "draft_only": true,
+    "default_template": "pain-method-conversion",
+    "default_article_type": "news",
+    "need_open_comment": 1,
+    "only_fans_can_comment": 0,
+    "cover_strategy": "frontmatter_or_first_image",
+    "output_root": "data/wechat-drafts",
+    "accounts": [
+      {
+        "name": "主公众号",
+        "alias": "main",
+        "default": true,
+        "default_publish_method": "api",
+        "default_author": "大人助理",
+        "need_open_comment": 1,
+        "only_fans_can_comment": 0
+      },
+      {
+        "name": "AI专题号",
+        "alias": "ai-tools",
+        "default_publish_method": "api",
+        "default_author": "大人助理",
+        "need_open_comment": 1,
+        "only_fans_can_comment": 0
+      }
+    ]
+  }
+}

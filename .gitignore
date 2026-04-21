@@ -1,0 +1,38 @@
+# Local memory
+/memory/*.md
+!/memory/.gitkeep
+
+# OpenClaw runtime state
+/.openclaw/
+/state/
+/startup/
+/downloads/
+/tools/
+/config/openclaw.json
+
+# Secrets
+.env
+.env.*
+*.secret
+*.token
+
+# Logs and caches
+*.log
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Workflow runtime outputs
+/skills/xhs-trend-to-publish/data/
+/skills/xhs-trend-to-publish/temp/
+/skills/xhs-trend-to-publish/vendor/**/tmp/
+/skills/xhs-trend-to-publish/vendor/**/demos/
+/skills/xhs-trend-to-publish/vendor/**/__pycache__/
+/skills/xhs-trend-to-publish/vendor/**/*.pyc
+/skills/xhs-trend-to-publish/vendor/**/.git/
+/skills/xhs-trend-to-publish/vendor/**/.gitignore
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

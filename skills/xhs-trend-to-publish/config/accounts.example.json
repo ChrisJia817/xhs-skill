@@ -1,0 +1,11 @@
+{
+  "default_account": "default",
+  "accounts": {
+    "default": {
+      "alias": "默认账号",
+      "publish_backends": ["cdp", "cookie", "api"],
+      "default_theme": "professional",
+      "default_mode": "private"
+    }
+  }
+}

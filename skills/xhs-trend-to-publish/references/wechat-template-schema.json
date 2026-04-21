@@ -1,0 +1,84 @@
+# 微信公众号模板 Schema（第一版）
+
+## 目标
+
+把用户提供的微信公众号样文抽象成可复用模板，用于根据同一主题的 topic brief 生成公众号长文。
+
+## 模板字段
+
+```json
+{
+  "template_name": "pain-method-conversion",
+  "description": "痛点诊断 + 方法拆解 + 软转化型长文",
+  "applicable_scenarios": ["方法论", "增长", "运营", "AI工具落地"],
+  "tone": "口语化、直接、有比喻、强实操",
+  "paragraph_style": "短段落",
+  "structure": [
+    {
+      "section": "pain_hook",
+      "purpose": "用失败场景和反转判断建立共鸣",
+      "required": true
+    },
+    {
+      "section": "core_thesis",
+      "purpose": "用一句话概括核心方法",
+      "required": true
+    },
+    {
+      "section": "why_old_way_fails",
+      "purpose": "解释旧方法为什么低效",
+      "required": true
+    },
+    {
+      "section": "method_steps",
+      "purpose": "分步骤拆解方法",
+      "required": true
+    },
+    {
+      "section": "pitfalls",
+      "purpose": "列出最容易做错的点",
+      "required": true
+    },
+    {
+      "section": "closing_summary",
+      "purpose": "总结并拔高认知",
+      "required": true
+    },
+    {
+      "section": "soft_cta",
+      "purpose": "自然导向课程/服务/下一步行动",
+      "required": false
+    }
+  ],
+  "title_style": {
+    "pattern": "痛点/问题 + 结果导向",
+    "preferred_length": "18-28字"
+  },
+  "cta_style": "软转化",
+  "notes": [
+    "不要直接照搬小红书钩子式标题",
+    "不要写成卡片短句集合",
+    "允许更完整的论述链"
+  ]
+}
+```
+
+## 第一版默认模板
+
+- `pain-method-conversion`
+  - 对应用户提供的“淘宝推广 / 达摩盘圈人”这类：
+    - 痛点共鸣
+    - 一句话核心方法
+    - 旧方法无效原因
+    - 分步骤拆解
+    - 避坑
+    - 总结 + 软转化
+
+## 后续扩展模板建议
+
+- `trend-analysis`
+  - 趋势判断 / 行业观察 / 认知升级型
+- `case-review`
+  - 经验复盘 / 案例拆解型
+- `myth-busting`
+  - 误区纠偏 / 反常识型
