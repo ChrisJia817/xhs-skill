@@ -4,12 +4,20 @@ import sys
 from pathlib import Path
 from vendor_paths import resolve_mediacrawler_root, resolve_mediacrawler_output, resolve_wechat_api_script
 from vendor_paths import AUTO_REDBOOK_DIR, XHS_CONFIG_DIR, XHS_SKILLS_DIR
-from common import read_json, resolve_account_profile_dir
+from common import read_json, resolve_account_profile_dir, ensure_dir
 
 
 def check_path(name: str, path: Path) -> tuple[str, bool, str]:
     exists = path.exists()
     return name, exists, str(path)
+
+
+def ensure_output_path(name: str, path: Path) -> tuple[str, bool, str]:
+    try:
+        ensure_dir(path)
+        return name, True, str(path)
+    except Exception as exc:
+        return name, False, f'{path} ({exc!r})'
 
 
 def check_command(name: str, cmd: list[str], cwd: Path | None = None) -> tuple[str, bool, str]:
@@ -43,7 +51,7 @@ def main():
     xhs_vendor_scripts = XHS_SKILLS_DIR / 'scripts'
 
     checks.append(check_path('mediacrawler_root', mc_root))
-    checks.append(check_path('mediacrawler_output', mc_output))
+    checks.append(ensure_output_path('mediacrawler_output', mc_output))
     checks.append(check_path('auto_redbook_renderer', auto_redbook_renderer))
     checks.append(check_path('xhs_vendor_scripts', xhs_vendor_scripts))
     checks.append(check_path('wechat_api_script', wechat_api))
